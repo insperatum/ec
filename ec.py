@@ -85,6 +85,7 @@ def ecIterator(grammar, tasks,
                expandFrontier=None,
                resumeFrontierSize=None,
                useRecognitionModel=True,
+               useNewRecognitionModel=False,
                steps=250,
                helmholtzRatio=0.,
                helmholtzBatch=5000,
@@ -111,6 +112,10 @@ def ecIterator(grammar, tasks,
         eprint("Warning: Recognition model needs feature extractor.",
                "Ignoring recognition model.")
         useRecognitionModel = False
+    if useNewRecognitionModel and featureExtractor is None:
+        eprint("Warning: Recognition model needs feature extractor.",
+               "Ignoring recognition model.")
+        useNewRecognitionModel = False
     if benchmark is not None and resume is None:
         eprint("You cannot benchmark unless you are loading a checkpoint, aborting.")
         assert False
