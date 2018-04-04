@@ -8,7 +8,7 @@ from grammar import Grammar
 from task import Task
 from type import Context, arrow, tlist, tint, t0, UnificationFailure
 from listPrimitives import basePrimitives, primitives, McCarthyPrimitives
-from recognition import HandCodedFeatureExtractor, MLPFeatureExtractor, RecurrentFeatureExtractor
+from recognition import HandCodedFeatureExtractor, MLPFeatureExtractor, RecurrentFeatureExtractor, JSONFeatureExtractor
 from enumeration import enumerateForTask
 
 def retrieveTasks(filename):
@@ -133,6 +133,28 @@ class FeatureExtractor(HandCodedFeatureExtractor):
         else: return None
         return list_features(examples)
 
+#from luke
+class MyJSONFeatureExtractor(JSONFeatureExtractor):
+    N_EXAMPLES = 5
+    def _featuresOfProgram(self, program, tp):
+        e = program.evaluate([])
+        examples = []
+        if isListFunction(tp):
+            sample = lambda: random.sample(xrange(30), random.randint(0, 8))
+        elif isIntFunction(tp):
+            sample = lambda: random.randint(0, 20)
+        else:
+            return None
+        for _ in xrange(self.N_EXAMPLES*5):
+            x = sample()
+            try:
+                y = e(x)
+                examples.append((x, y))
+            except: continue
+            if len(examples) >= self.N_EXAMPLES: break
+        else:
+            return None
+        return examples
 
 class DeepFeatureExtractor(MLPFeatureExtractor):
     N_EXAMPLES = 15
@@ -235,7 +257,7 @@ def list_options(parser):
                         help="Which primitive set to use",
                         choices=["McCarthy","base","rich"])
     parser.add_argument("--extractor", type=str,
-        choices=["hand", "deep", "learned"],
+        choices=["hand", "deep", "learned", "json"],
         default="learned")
     parser.add_argument("--split", metavar="TRAIN_RATIO",
         type=float,
@@ -309,6 +331,7 @@ if __name__ == "__main__":
         "hand": FeatureExtractor,
         "deep": DeepFeatureExtractor,
         "learned": LearnedFeatureExtractor,
+        "json": MyJSONFeatureExtractor
     }[args.pop("extractor")]
     extractor.H = args.pop("hidden")
     extractor.USE_CUDA = args["cuda"]

@@ -136,7 +136,7 @@ def ecIterator(grammar, tasks,
     def checkpointPath(iteration, extra=""):
         parameters["iterations"] = iteration
         kvs = ["{}={}".format(ECResult.abbreviate(k), parameters[k]) for k in sorted(parameters.keys())]
-        if useRecognitionModel:
+        if useRecognitionModel or useNewRecognitionModel:
             kvs += ["feat=%s"%(featureExtractor.__name__)]
         if bootstrap:
             kvs += ["bstrap=True"]
@@ -195,6 +195,13 @@ def ecIterator(grammar, tasks,
                           taskSolutions = { t: Frontier([], task = t) for t in tasks },
                           recognitionModel = None)
 
+    #just plopped this in here, hope it works:
+    if useNewRecognitionModel and (not hasattr(result, 'recognitionModel') or type(result.recognitionModel) is not NewRecognitionModel):
+        eprint("Creating new recognition model")
+        featureExtractorObject = featureExtractor(tasks + testingTasks)
+        result.recognitionModel = NewRecognitionModel(featureExtractorObject, grammar, cuda=cuda)
+    #end 
+
     if benchmark is not None:
         assert resume is not None, "Benchmarking requires resuming from checkpoint that you are benchmarking."
         if benchmark > 0:
@@ -213,6 +220,7 @@ def ecIterator(grammar, tasks,
         yield None
         return 
 
+    #may need to change this if it doesn't do what I need
     likelihoodModel = {
         "all-or-nothing":        lambda: AllOrNothingLikelihoodModel(
                                              timeout=evaluationTimeout),
@@ -277,9 +285,14 @@ def ecIterator(grammar, tasks,
                              CPUs=CPUs,
                              helmholtzBatch=helmholtzBatch,
                              helmholtzRatio=helmholtzRatio if j > 0 else 0.)
-            result.recognitionModel = recognizer
+            result.recognitionModel = recognizer 
 
-            bottomupFrontiers, times = recognizer.enumerateFrontiers(tasks, likelihoodModel,
+        elif useNewRecognitionModel: # Train a recognition model
+            result.recognitionModel.updateGrammar(grammar)
+            result.recognitionModel.train(result.frontiers, topK=topK, steps=steps, helmholtzRatio=helmholtzRatio)
+
+        if useRecognitionModel or useNewRecognitionModel:
+            bottomupFrontiers, times = result.recognitionModel.enumerateFrontiers(tasks, likelihoodModel,
                                                                      CPUs=CPUs,
                                                                      solver=solver,
                                                                      maximumFrontier=maximumFrontier,
@@ -392,6 +405,7 @@ def commandlineArguments(_=None,
                          topK=1,
                          CPUs=1,
                          useRecognitionModel=True,
+                         useNewRecognitionModel=False,
                          steps=250,
                          activation='relu',
                          helmholtzRatio=0.,
