@@ -84,8 +84,8 @@ def ecIterator(grammar, tasks,
                enumerationTimeout=None,
                expandFrontier=None,
                resumeFrontierSize=None,
-               useRecognitionModel=True,
-               useNewRecognitionModel=False,
+               useRecognitionModel=False,
+               useNewRecognitionModel=True,
                steps=250,
                helmholtzRatio=0.,
                helmholtzBatch=5000,
@@ -195,7 +195,7 @@ def ecIterator(grammar, tasks,
                           taskSolutions = { t: Frontier([], task = t) for t in tasks },
                           recognitionModel = None)
 
-    #just plopped this in here, hope it works:
+    #just plopped this in here, hope it works: -it doesn't. having issues.
     if useNewRecognitionModel and (not hasattr(result, 'recognitionModel') or type(result.recognitionModel) is not NewRecognitionModel):
         eprint("Creating new recognition model")
         featureExtractorObject = featureExtractor(tasks + testingTasks)
@@ -289,7 +289,7 @@ def ecIterator(grammar, tasks,
 
         elif useNewRecognitionModel: # Train a recognition model
             result.recognitionModel.updateGrammar(grammar)
-            result.recognitionModel.train(result.frontiers, topK=topK, steps=steps, helmholtzRatio=helmholtzRatio)
+            result.recognitionModel.train(frontiers, topK=topK, steps=steps, helmholtzRatio=helmholtzRatio) #changed from result.frontiers to frontiers and added thingy
 
         if useRecognitionModel or useNewRecognitionModel:
             bottomupFrontiers, times = result.recognitionModel.enumerateFrontiers(tasks, likelihoodModel,
@@ -404,8 +404,8 @@ def commandlineArguments(_=None,
                          enumerationTimeout=None,
                          topK=1,
                          CPUs=1,
-                         useRecognitionModel=True,
-                         useNewRecognitionModel=False,
+                         useRecognitionModel=False,
+                         useNewRecognitionModel=True,
                          steps=250,
                          activation='relu',
                          helmholtzRatio=0.,

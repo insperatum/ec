@@ -7,7 +7,7 @@ from utilities import eprint
 from network import Network
 
 import gc
-#from multiprocessing import Pool
+from multiprocessing import Pool
 
 import torch
 import torch.nn as nn

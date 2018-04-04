@@ -258,7 +258,7 @@ def list_options(parser):
                         choices=["McCarthy","base","rich"])
     parser.add_argument("--extractor", type=str,
         choices=["hand", "deep", "learned", "json"],
-        default="learned")
+        default="learned") #if i switch to json it breaks
     parser.add_argument("--split", metavar="TRAIN_RATIO",
         type=float,
         help="split test/train")
@@ -353,5 +353,13 @@ if __name__ == "__main__":
     for t in make_list_bootstrap_tasks():
         eprint(t.describe())
         eprint()
-    
+
+
+    eprint("train:",train)
+    eprint("train[0].features:",train[0].features)
+
+    eprint("train[0]:",train[0])
+
+
+
     explorationCompression(baseGrammar, train, testingTasks=test, **args)
