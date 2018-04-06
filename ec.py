@@ -240,6 +240,7 @@ def ecIterator(grammar, tasks,
             eprint("Expanding enumeration timeout from {} to {} because of no progress".format(
                 oldEnumerationTimeout, enumerationTimeout))
 
+        #the line below may be an issue... enumeration doesn't use the recognition model
         frontiers, times = multithreadedEnumeration(grammar, tasks, likelihoodModel,
                                                     solver=solver,
                                                     frontierSize=frontierSize,
@@ -281,6 +282,11 @@ def ecIterator(grammar, tasks,
             featureExtractorObject = featureExtractor(tasks)
             recognizer = RecognitionModel(featureExtractorObject, grammar, activation=activation, cuda=cuda)
 
+            #transplanted test code
+            requests = [ frontier.task.request for frontier in frontiers ]
+            eprint("requests:")
+            eprint(requests)
+            
             recognizer.train(frontiers, topK=topK, steps=steps,
                              CPUs=CPUs,
                              helmholtzBatch=helmholtzBatch,
@@ -290,7 +296,7 @@ def ecIterator(grammar, tasks,
         elif useNewRecognitionModel: # Train a recognition model
             result.recognitionModel.updateGrammar(grammar)
             result.recognitionModel.train(frontiers, topK=topK, steps=steps, helmholtzRatio=helmholtzRatio) #changed from result.frontiers to frontiers and added thingy
-
+            eprint("done training recognition model")
         if useRecognitionModel or useNewRecognitionModel:
             bottomupFrontiers, times = result.recognitionModel.enumerateFrontiers(tasks, likelihoodModel,
                                                                      CPUs=CPUs,
@@ -406,7 +412,7 @@ def commandlineArguments(_=None,
                          CPUs=1,
                          useRecognitionModel=False,
                          useNewRecognitionModel=True,
-                         steps=250,
+                         steps=1,
                          activation='relu',
                          helmholtzRatio=0.,
                          helmholtzBatch=5000,

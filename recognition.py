@@ -4,6 +4,7 @@ from grammar import *
 from heapq import *
 from utilities import eprint
 #luke
+from program import tokeniseProgram, untokeniseProgram, ParseFailure
 from network import Network
 
 import gc
@@ -665,8 +666,8 @@ class HandCodedFeatureExtractor(object):
 
 class JSONFeatureExtractor(object):
     def __init__(self, tasks, cuda=False):
-        self.averages, self.deviations = Task.featureMeanAndStandardDeviation(tasks)
-        self.outputDimensionality = len(self.averages)
+        #self.averages, self.deviations = Task.featureMeanAndStandardDeviation(tasks)
+        #self.outputDimensionality = len(self.averages)
         self.cuda = cuda
         self.tasks = tasks
 
@@ -681,8 +682,13 @@ class JSONFeatureExtractor(object):
 
     def featuresOfProgram(self, p, t):
         features = self._featuresOfProgram(p,t)
-        if features is None: return None
-        return [(self.stringify(x), self.stringify(y)) for (x,y) in features]
+        if features is None: 
+            #eprint("nofeatures")
+            return None
+        #eprint("features_inner:")
+        #eprint(features)
+        #eprint([str(y)] for (_,y) in features)
+        return [(self.stringify(x), self.stringify(str(y))) for (x,y) in features]
 
 
 class NewRecognitionModel(nn.Module):
@@ -716,7 +722,7 @@ class NewRecognitionModel(nn.Module):
 
     def updateGrammar(self, grammar):
         self.network.set_target_vocabulary(self.getTargetVocabulary(grammar))
-        self.network = copy.deepcopy(self.network) #Annoying to have to do this, but it's okay
+        self.network = copy.deepcopy(self.network) #Annoying to have to do this, but it's okay - why?
 
     def train(self, frontiers, _=None, steps=250, lr=0.001, topK=1, CPUs=1,
               helmholtzRatio = 0.):
@@ -724,8 +730,11 @@ class NewRecognitionModel(nn.Module):
         helmholtzRatio: What fraction of the training data should be forward samples from the generative model?
         """
         requests = [ frontier.task.request for frontier in frontiers ]
+        eprint("requests:")
+        eprint(requests)
         frontiers = [ frontier.topK(topK).normalize() for frontier in frontiers if not frontier.empty ]
-
+        #eprint("frontiers:")
+        #eprint(frontiers)
         # Not sure why this ever happens
         if helmholtzRatio is None: helmholtzRatio = 0.
 
@@ -744,7 +753,10 @@ class NewRecognitionModel(nn.Module):
                     permutedFrontiers = list(frontiers)
                     random.shuffle(permutedFrontiers)
                 else: permutedFrontiers = [None]
+                frontier_num = 0
                 for frontier in permutedFrontiers:
+                    eprint("frontier num", frontier_num, "out of", len(permutedFrontiers))
+                    frontier_num += 1
                     # Randomly decide whether to sample from the generative model
                     doingHelmholtz = random.random() < helmholtzRatio
                     if doingHelmholtz:
@@ -752,6 +764,7 @@ class NewRecognitionModel(nn.Module):
                         loss = self.step(*networkInputs)
                     if not doingHelmholtz:
                         if helmholtzRatio < 1.:
+                            #placeholder for now
                             # self.zero_grad()
                             # loss = self.frontierKL(frontier)
                             pass
@@ -794,7 +807,12 @@ class NewRecognitionModel(nn.Module):
         inputss = [[_in for (_in, _out) in features] for (program, request, features) in helmholtzSamples]
         outputss = [[_out for (_in, _out) in features] for (program, request, features) in helmholtzSamples]
         targets = [tokeniseProgram(program) for (program, request, features) in helmholtzSamples]
-
+        #eprint("targets")
+        #eprint(targets)
+        #eprint("inputss:")
+        #eprint(inputss)
+        #eprint("outputs:")
+        #eprint(outputss)
         #For now, just concat input + output
         # joinedInputsOutputs = [[inputss[i][j] + outputss[i][j] for j in range(len(inputss[i]))] for i in range(len(inputss))]
 
@@ -816,7 +834,7 @@ class NewRecognitionModel(nn.Module):
         permutedBatchTargets = batchTargets[:]
         random.shuffle(permutedBatchTargets)
 
-        return batchInputs, batchOutputs, permutedBatchTargets
+        return batchInputs, batchOutputs, permutedBatchTargets #why the shuffle for only the targets??
 
     def step(self, *networkInputs):
         score = self.network.optimiser_step(*networkInputs)
@@ -851,6 +869,8 @@ class NewRecognitionModel(nn.Module):
            #>>> Increase maxDepth, might actually make sampling faster
            #>>> Call out to pypy
            features = self.featureExtractor.featuresOfProgram(program, request)
+           #eprint("features_outer:")
+           #eprint(features)
            # Feature extractor failure
            if features is None: return None
            else: return program, request, features
@@ -864,6 +884,14 @@ class NewRecognitionModel(nn.Module):
     def enumerateFrontiers(self, tasks,
                            frontierSize=None, enumerationTimeout=None, 
                            CPUs=1, maximumFrontier=None, evaluationTimeout=None):
+
+    """def enumerateFrontiers(self, tasks, likelihoodModel,
+                           solver=None,
+                           frontierSize=None, enumerationTimeout=None,
+                           CPUs=1, maximumFrontier=None, evaluationTimeout=None):"""
+
+        #need to encorporate likelihood model, 
+
         # print("New recognition model enumerate frontiers")
         # print("ONLY USING 10 TASKS!")
         # tasks = tasks[:10]

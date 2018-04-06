@@ -154,7 +154,7 @@ class MyJSONFeatureExtractor(JSONFeatureExtractor):
             if len(examples) >= self.N_EXAMPLES: break
         else:
             return None
-        return examples
+        return examples #changed to list_features(examples) from examples
 
 class DeepFeatureExtractor(MLPFeatureExtractor):
     N_EXAMPLES = 15
@@ -258,7 +258,7 @@ def list_options(parser):
                         choices=["McCarthy","base","rich"])
     parser.add_argument("--extractor", type=str,
         choices=["hand", "deep", "learned", "json"],
-        default="learned") #if i switch to json it breaks
+        default="json") #if i switch to json it breaks
     parser.add_argument("--split", metavar="TRAIN_RATIO",
         type=float,
         help="split test/train")
@@ -355,7 +355,7 @@ if __name__ == "__main__":
         eprint()
 
 
-    eprint("train:",train)
+    #eprint("train:",train)
     eprint("train[0].features:",train[0].features)
 
     eprint("train[0]:",train[0])
