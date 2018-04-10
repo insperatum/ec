@@ -138,6 +138,7 @@ class MyJSONFeatureExtractor(JSONFeatureExtractor):
     N_EXAMPLES = 5
     def _featuresOfProgram(self, program, tp):
         e = program.evaluate([])
+
         examples = []
         if isListFunction(tp):
             sample = lambda: random.sample(xrange(30), random.randint(0, 8))
@@ -149,6 +150,7 @@ class MyJSONFeatureExtractor(JSONFeatureExtractor):
             x = sample()
             try:
                 y = e(x)
+                #eprint(tp, program, x, y)
                 examples.append((x, y))
             except: continue
             if len(examples) >= self.N_EXAMPLES: break
@@ -265,6 +267,10 @@ def list_options(parser):
     parser.add_argument("-H", "--hidden", type=int,
         default=16,
         help="number of hidden units")
+    parser.add_argument("--filter_task_args", 
+                        default=False,
+                        action="store_true",
+                        help="only use tasks with 1 arguments")
 
 
 if __name__ == "__main__":
@@ -276,6 +282,14 @@ if __name__ == "__main__":
         extras=list_options)
 
     tasks = retrieveTasks(args.pop("dataset"))
+
+
+    
+    #removing fucked up tasks
+   # tasks = [ t for t in tasks 
+              #if tasks.request == 1]
+
+
 
     maxTasks = args.pop("maxTasks")
     if len(tasks) > maxTasks:
@@ -289,6 +303,7 @@ if __name__ == "__main__":
               if any( xs[0] != y for xs, y in t.examples )]
     tasks = [ t for t in tasks
               if not all( t.examples[0][1] == y for xs, y in t.examples )]
+
 
     eprint("Got {} list tasks".format(len(tasks)))
 
@@ -323,6 +338,10 @@ if __name__ == "__main__":
         train = tasks
         test = []
 
+
+ 
+    
+
     prims = {"base": basePrimitives,
              "McCarthy": McCarthyPrimitives,
              "rich": primitives}[args.pop("primitives")]
@@ -342,24 +361,34 @@ if __name__ == "__main__":
         "evaluationTimeout": 0.0005,
         "topK": 5,
         "maximumFrontier": 5,
-        "solver": "ocaml",
+        "solver": "python",
         "compressor": "rust"
     })
 
     baseGrammar = Grammar.uniform(prims())
     from makeListTasks import make_list_bootstrap_tasks, bonusListProblems
-    if not args.pop("Lucas"): train = make_list_bootstrap_tasks()
+    if not args.pop("Lucas"): train = make_list_bootstrap_tasks() #Max commented this line
+
+
+    if args.pop("filter_task_args"):
+        train = [t for t in train
+              if len(t.request.functionArguments()) == 1]
+
+
     eprint("Total number of training tasks:",len(train))
-    for t in make_list_bootstrap_tasks():
+
+
+    for t in train:
         eprint(t.describe())
         eprint()
 
 
     #eprint("train:",train)
-    eprint("train[0].features:",train[0].features)
+    #eprint("train[0].features:",train[0].features)
 
-    eprint("train[0]:",train[0])
+    #eprint("train[0]:",train[0])
 
-
+   #testing stuff
+    #eprint([t.request for t in train])
 
     explorationCompression(baseGrammar, train, testingTasks=test, **args)

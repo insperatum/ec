@@ -282,22 +282,16 @@ def ecIterator(grammar, tasks,
             featureExtractorObject = featureExtractor(tasks)
             recognizer = RecognitionModel(featureExtractorObject, grammar, activation=activation, cuda=cuda)
 
-            #transplanted test code
-            requests = [ frontier.task.request for frontier in frontiers ]
-            eprint("requests:")
-            eprint(requests)
+            ##transplanted test code
+            #requests = [ frontier.task.request for frontier in frontiers ]
+            #eprint("requests:")
+            #eprint(requests)
             
             recognizer.train(frontiers, topK=topK, steps=steps,
                              CPUs=CPUs,
                              helmholtzBatch=helmholtzBatch,
                              helmholtzRatio=helmholtzRatio if j > 0 else 0.)
             result.recognitionModel = recognizer 
-
-        elif useNewRecognitionModel: # Train a recognition model
-            result.recognitionModel.updateGrammar(grammar)
-            result.recognitionModel.train(frontiers, topK=topK, steps=steps, helmholtzRatio=helmholtzRatio) #changed from result.frontiers to frontiers and added thingy
-            eprint("done training recognition model")
-        if useRecognitionModel or useNewRecognitionModel:
             bottomupFrontiers, times = result.recognitionModel.enumerateFrontiers(tasks, likelihoodModel,
                                                                      CPUs=CPUs,
                                                                      solver=solver,
@@ -305,6 +299,21 @@ def ecIterator(grammar, tasks,
                                                                      frontierSize=frontierSize,
                                                                      enumerationTimeout=enumerationTimeout,
                                                                      evaluationTimeout=evaluationTimeout)
+        elif useNewRecognitionModel: # Train a recognition model
+            result.recognitionModel.updateGrammar(grammar)
+            result.recognitionModel.train(frontiers, topK=topK, steps=steps, helmholtzRatio=helmholtzRatio) #changed from result.frontiers to frontiers and added thingy
+            eprint("done training recognition model")
+            bottomupFrontiers = result.recognitionModel.enumerateFrontiers(tasks, likelihoodModel,
+                                                                     CPUs=CPUs,
+                                                                     solver=solver,
+                                                                     maximumFrontier=maximumFrontier,
+                                                                     frontierSize=frontierSize,
+                                                                     enumerationTimeout=enumerationTimeout,
+                                                                     evaluationTimeout=evaluationTimeout)     
+
+        if useRecognitionModel or useNewRecognitionModel:
+
+
             eprint("Recognition model enumeration results:")
             eprint(Frontier.describe(bottomupFrontiers))
 
@@ -321,13 +330,16 @@ def ecIterator(grammar, tasks,
         else:
             result.averageDescriptionLength.append(mean( -f.marginalLikelihood()
                                                          for f in frontiers
+        
                                                          if not f.empty ))
-        result.searchTimes.append(times)
+        
+        if UseRecognitionModel:
+            result.searchTimes.append(times)
 
-        eprint("Average search time: ",int(mean(times)+0.5),
-               "sec.\tmedian:",int(median(times)+0.5),
-               "\tmax:",int(max(times)+0.5),
-               "\tstandard deviation",int(standardDeviation(times)+0.5))
+            eprint("Average search time: ",int(mean(times)+0.5),
+                "sec.\tmedian:",int(median(times)+0.5),
+                "\tmax:",int(max(times)+0.5),
+                "\tstandard deviation",int(standardDeviation(times)+0.5))
 
         # Incorporate frontiers from anything that was not hit
         frontiers = [ f if not f.empty
@@ -412,7 +424,7 @@ def commandlineArguments(_=None,
                          CPUs=1,
                          useRecognitionModel=False,
                          useNewRecognitionModel=True,
-                         steps=1,
+                         steps=2,
                          activation='relu',
                          helmholtzRatio=0.,
                          helmholtzBatch=5000,

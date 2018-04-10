@@ -688,7 +688,7 @@ class JSONFeatureExtractor(object):
         #eprint("features_inner:")
         #eprint(features)
         #eprint([str(y)] for (_,y) in features)
-        return [(self.stringify(x), self.stringify(str(y))) for (x,y) in features]
+        return [(self.stringify(x), self.stringify(y)) for (x,y) in features]
 
 
 class NewRecognitionModel(nn.Module):
@@ -730,8 +730,8 @@ class NewRecognitionModel(nn.Module):
         helmholtzRatio: What fraction of the training data should be forward samples from the generative model?
         """
         requests = [ frontier.task.request for frontier in frontiers ]
-        eprint("requests:")
-        eprint(requests)
+        #eprint("requests:")
+        #eprint(requests)
         frontiers = [ frontier.topK(topK).normalize() for frontier in frontiers if not frontier.empty ]
         #eprint("frontiers:")
         #eprint(frontiers)
@@ -748,10 +748,15 @@ class NewRecognitionModel(nn.Module):
             avgLoss = None
             avgPermutedLoss = None
 
-            for i in range(1,steps + 1):    
+            for i in range(1,steps + 1): 
+                eprint("step", i, "out of", steps + 1)   
                 if helmholtzRatio < 1.:
                     permutedFrontiers = list(frontiers)
                     random.shuffle(permutedFrontiers)
+                    eprint("frontiers:")
+                    eprint(frontiers)
+                    eprint("permutedFrontiers:")
+                    eprint(permutedFrontiers)
                 else: permutedFrontiers = [None]
                 frontier_num = 0
                 for frontier in permutedFrontiers:
@@ -760,13 +765,16 @@ class NewRecognitionModel(nn.Module):
                     # Randomly decide whether to sample from the generative model
                     doingHelmholtz = random.random() < helmholtzRatio
                     if doingHelmholtz:
-                        networkInputs = self.shuffledNetworkInputs(requests, HELMHOLTZBATCH, CPUs)
+                        networkInputs = self.helmholtzNetworkInputs(requests, HELMHOLTZBATCH, CPUs)
                         loss = self.step(*networkInputs)
                     if not doingHelmholtz:
                         if helmholtzRatio < 1.:
                             #placeholder for now
                             # self.zero_grad()
                             # loss = self.frontierKL(frontier)
+                            #fix this later
+                            loss = 0
+                            eprint("helmholtz is messed up. Fix it.")
                             pass
                         else:
                             # Refuse to train on the frontiers
@@ -807,12 +815,6 @@ class NewRecognitionModel(nn.Module):
         inputss = [[_in for (_in, _out) in features] for (program, request, features) in helmholtzSamples]
         outputss = [[_out for (_in, _out) in features] for (program, request, features) in helmholtzSamples]
         targets = [tokeniseProgram(program) for (program, request, features) in helmholtzSamples]
-        #eprint("targets")
-        #eprint(targets)
-        #eprint("inputss:")
-        #eprint(inputss)
-        #eprint("outputs:")
-        #eprint(outputss)
         #For now, just concat input + output
         # joinedInputsOutputs = [[inputss[i][j] + outputss[i][j] for j in range(len(inputss[i]))] for i in range(len(inputss))]
 
@@ -881,16 +883,17 @@ class NewRecognitionModel(nn.Module):
                            range(N))
         return helmholtzSamples
 
-    def enumerateFrontiers(self, tasks,
+    """def enumerateFrontiers(self, tasks,
                            frontierSize=None, enumerationTimeout=None, 
                            CPUs=1, maximumFrontier=None, evaluationTimeout=None):
+                           """
 
-    """def enumerateFrontiers(self, tasks, likelihoodModel,
+    def enumerateFrontiers(self, tasks, likelihoodModel,
                            solver=None,
                            frontierSize=None, enumerationTimeout=None,
-                           CPUs=1, maximumFrontier=None, evaluationTimeout=None):"""
+                           CPUs=1, maximumFrontier=None, evaluationTimeout=None):
 
-        #need to encorporate likelihood model, 
+        #need to encorporate likelihood model, solver
 
         # print("New recognition model enumerate frontiers")
         # print("ONLY USING 10 TASKS!")
@@ -928,11 +931,14 @@ class NewRecognitionModel(nn.Module):
         # raise Exception()
         # network = self.network
 
+        #TODO
         x = enumerateNetwork( #Can't callcompiled because program.Primitive doesn't have the right globals
-                    network, tasks_features,
+                    network, tasks_features, likelihoodModel, solver=solver,
                     frontierSize = frontierSize, enumerationTimeout=enumerationTimeout, 
                     CPUs=CPUs, maximumFrontier=maximumFrontier,
                     evaluationTimeout=evaluationTimeout)
+
+
 
         if self.use_cuda:
             torch.set_default_tensor_type('torch.cuda.FloatTensor')
