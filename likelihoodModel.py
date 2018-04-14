@@ -2,6 +2,7 @@ from utilities import eprint, exp, log, timing, valid
 from task import Task
 import random
 import gc
+import pregex
 
 
 class AllOrNothingLikelihoodModel:
@@ -26,6 +27,33 @@ class EuclideanLikelihoodModel:
         distance = sum((x1-x2)**2 for x1, x2 in zip(taskFeat, progFeat))
         logLikelihood = float(-distance)  # FIXME: this is really naive
         return exp(logLikelihood) > self.successCutoff, logLikelihood
+
+
+class ProbabilisticLikelihoodModel:
+
+    def __init__(self, timeout=None):
+        self.timeout = timeout
+        #do i need timeout?
+    def score(self, program, task): 
+        #need a try, catch here for problems, and for timeouts
+        #can copy task.py for the timeout structure 
+
+        #tries and catches
+        string_pregex = program.evaluate([])
+        preg = pregex.create(string_pregex)
+
+        #include prior somehow
+        #right now, just summing up log likelihoods. IDK if this is correct.
+        #also not using prior at all.
+        cum_ll = 0
+        for example in task.examples:
+            ll = preg.match(example)
+            if ll == "-inf":
+                return NEGATIVEINFINITY
+
+            cum_ll += ll
+        
+        return cum_ll
 
 
 try:

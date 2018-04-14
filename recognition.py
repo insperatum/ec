@@ -683,11 +683,7 @@ class JSONFeatureExtractor(object):
     def featuresOfProgram(self, p, t):
         features = self._featuresOfProgram(p,t)
         if features is None: 
-            #eprint("nofeatures")
             return None
-        #eprint("features_inner:")
-        #eprint(features)
-        #eprint([str(y)] for (_,y) in features)
         return [(self.stringify(x), self.stringify(y)) for (x,y) in features]
 
 
@@ -730,11 +726,9 @@ class NewRecognitionModel(nn.Module):
         helmholtzRatio: What fraction of the training data should be forward samples from the generative model?
         """
         requests = [ frontier.task.request for frontier in frontiers ]
-        #eprint("requests:")
-        #eprint(requests)
+
         frontiers = [ frontier.topK(topK).normalize() for frontier in frontiers if not frontier.empty ]
-        #eprint("frontiers:")
-        #eprint(frontiers)
+
         # Not sure why this ever happens
         if helmholtzRatio is None: helmholtzRatio = 0.
 
@@ -753,10 +747,12 @@ class NewRecognitionModel(nn.Module):
                 if helmholtzRatio < 1.:
                     permutedFrontiers = list(frontiers)
                     random.shuffle(permutedFrontiers)
+                    
                     eprint("frontiers:")
                     eprint(frontiers)
                     eprint("permutedFrontiers:")
                     eprint(permutedFrontiers)
+                
                 else: permutedFrontiers = [None]
                 frontier_num = 0
                 for frontier in permutedFrontiers:
@@ -835,7 +831,6 @@ class NewRecognitionModel(nn.Module):
         batchInputs, batchOutputs, batchTargets =  self.helmholtzNetworkInputs(requests, batchSize, CPUs)
         permutedBatchTargets = batchTargets[:]
         random.shuffle(permutedBatchTargets)
-
         return batchInputs, batchOutputs, permutedBatchTargets #why the shuffle for only the targets??
 
     def step(self, *networkInputs):
@@ -874,7 +869,7 @@ class NewRecognitionModel(nn.Module):
            #eprint("features_outer:")
            #eprint(features)
            # Feature extractor failure
-           if features is None: return None
+           if features is None: return None #what's the point of the features???
            else: return program, request, features
 
     def sampleManyHelmholtz(self, requests, N, CPUs): #>>> callCompiled
