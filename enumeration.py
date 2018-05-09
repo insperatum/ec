@@ -330,7 +330,6 @@ def enumerateNetworkForTasks(cpu_idx, network, tasks_features, _ = None,
         starting = time()
         # previousBudget = 0.
         # budget = previousBudget + budgetIncrement
-        if verbose: eprint("LUCAS: for task, features in tasks_features")
 
         try:
             totalNumberOfPrograms = 0
@@ -343,23 +342,19 @@ def enumerateNetworkForTasks(cpu_idx, network, tasks_features, _ = None,
             numberOfHits = 0
 
             for i in range(50):
-                if verbose: eprint("LUCAS - for i in range(50)")
                 random.shuffle(features)
                 inputs = [input for (input, output) in features[:4]]
                 outputs = [output for (input, output) in features[:4]]
                 samples, scores = network.sampleAndScore([inputs]*100, [outputs]*100)
-                if verbose: eprint("LUCAS - after sampling")
                 new_proposals_scores = [(tuple(samples[i]), scores[i]) for i in range(len(samples)) if tuple(samples[i]) not in seen_proposals]
                 seen_proposals = seen_proposals | set(x[0] for x in new_proposals_scores)
 
                 for sample, prior in new_proposals_scores:
-                    if verbose: eprint("LUCAS - inner loop")
                     try:
                         p = untokeniseProgram(sample)
                         likelihood = task.logLikelihood(p, timeout=evaluationTimeout) #TODO: change this
                     except ParseFailure: continue
                     except RunFailure: continue #Happens during likelihood evaluation for e.g. (lambda $3)
-                    if verbose: eprint("LUCAS - after evaluation")
                     
                     numberOfPrograms += 1
 

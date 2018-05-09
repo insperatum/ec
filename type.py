@@ -175,11 +175,8 @@ t0 = TypeVariable(0)
 t1 = TypeVariable(1)
 t2 = TypeVariable(2)
 
-
 #regex types:
 tpregex = baseType("pregex")
-
-
 
 ARROW = "->"
 def arrow(*arguments):

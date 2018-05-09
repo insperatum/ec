@@ -1,29 +1,29 @@
 from type import tpregex
 from task import Task
+import pickle
+import json
 
 
-taskfile = './data_filtered.pt'
-task_list = pickle.load(open(taskfile, 'rb'))
-
-#make list shorter for now
-task_list = task_list[0:51]
+taskfile = './data_filtered.json'
+#task_list = pickle.load(open(taskfile, 'rb'))
 
 
-def makeRegexTasks():
+with open ('./data_filtered.json') as f:
+	file_contents = f.read()
+task_list = json.loads(file_contents)
+
+
+def makeTasks():
 	#a series of tasks
 
 	#if I were to just dump all of them:
 	regextasks = [ 
 		Task("Luke data column no." + str(i), 
 			tpregex, 
-			[example for example in task[i]]
-			) for i in range(task_list)
-	]
-
-
-"""
-    regextasks = [
-        Task("length bool", arrow(none,tstr),
+			[((), example) for example in task_list[i]]
+			) for i in range(len(task_list))]
+	"""	regextasks = [
+       	Task("length bool", arrow(none,tstr),
              [((l,), len(l))
               for _ in range(10)
               for l in [[flip() for _ in range(randint(0,10)) ]] ]),
@@ -32,7 +32,5 @@ def makeRegexTasks():
               for _ in range(10)
               for l in [randomList()] ]),
     ]
-"""
-
-
-    return regextasks #some list of tasks 
+	"""
+	return regextasks #some list of tasks 

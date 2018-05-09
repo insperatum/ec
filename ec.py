@@ -228,7 +228,7 @@ def ecIterator(grammar, tasks,
                                              tasks, featureExtractor(tasks)),
         "euclidean":             lambda: EuclideanLikelihoodModel(
                                              featureExtractor(tasks)),
-        "probabilistic":         lambda: ProbabilisticLikelihoodModel() #TODO
+        "probabilistic":         lambda: ProbabilisticLikelihoodModel(timeout=evaluationTimeout) #TODO
     }[likelihoodModel]()
 
     for j in range(resume or 0, iterations):
@@ -334,7 +334,7 @@ def ecIterator(grammar, tasks,
         
                                                          if not f.empty ))
         
-        if UseRecognitionModel:
+        if useRecognitionModel:
             result.searchTimes.append(times)
 
             eprint("Average search time: ",int(mean(times)+0.5),
@@ -362,6 +362,8 @@ def ecIterator(grammar, tasks,
         result.learningCurve += [sum(f is not None and not f.empty for f in result.taskSolutions.values() )]
         
         # Sleep-G
+        #eprint("frontiers:")
+        #eprint(frontiers)
         grammar, frontiers = induceGrammar(grammar, frontiers,
                                            topK=topK, pseudoCounts=pseudoCounts, a=arity,
                                            aic=aic, structurePenalty=structurePenalty,
